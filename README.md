@@ -1,4 +1,4 @@
-![alt text](https://github.abudhabi.nyu.edu/yc2548/ICS_Bomberman/blob/master/screenshot.png)
+![alt text](https://github.com/Roemm/Bomberman/blob/master/screenshot.png)
 
 # Bomberman
 
