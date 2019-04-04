@@ -1,0 +1,295 @@
+# 2018.12.07 update
+# complete the object movement
+# set walls
+# need to add place bumb
+# need to add pictures
+# need to add the bomb explore recursion
+# need to add tow-player mode
+
+# walls 6*4, surrounding: 15*11, 960*704
+
+
+import time
+import os
+import random
+path = os.getcwd()
+
+# needed if we need to add sound
+# add_library('minim')
+# player = Minim(this)
+
+
+class Creature:
+
+    def __init__(self, x, y, r, imgFolder, w, h, F):
+        self.x = x
+        self.y = y
+        self.r = r
+        self.w = w
+        self.h = h
+        self.f = 0
+        self.F = F
+        self.vx = 0
+        self.vy = 0
+        self.dir = "up"  # the default direction would be facing up
+        self.imgL = loadImage(
+            path + "/assets/images/" + imgFolder + "/left.png")
+        self.imgR = loadImage(
+            path + "/assets/images/" + imgFolder + "/right.png")
+
+    def update(self):
+
+        self.x += self.vx
+        self.y += self.vy
+
+    def display(self):
+        self.update()
+
+        # add up and down display only for bomberman
+        if isinstance(self, Man):
+            if self.dir == "up":
+                image(self.imgU, self.x - self.w // 2, self.y - self.h // 2, self.w,
+                      self.h, int(self.f) * self.w, 0, (int(self.f) + 1) * self.w, self.h)
+            elif self.dir == "down":
+                image(self.imgD, self.x - self.w // 2, self.y - self.h // 2, self.w,
+                      self.h, int(self.f) * self.w, 0, (int(self.f) + 1) * self.w, self.h)
+
+        # left right display
+        if self.dir == "right":
+            image(self.imgR, self.x - self.w // 2, self.y - self.h // 2, self.w,
+                  self.h, int(self.f) * self.w, 0, (int(self.f) + 1) * self.w, self.h)
+
+        elif self.dir == "left":
+            image(self.imgL, self.x - self.w // 2, self.y - self.h // 2, self.w,
+                  self.h, int(self.f) * self.w, 0, (int(self.f) + 1) * self.w, self.h)
+
+        if self.vx != 0 or self.vy != 0:
+            self.f = (self.f + 0.2) % self.F
+
+        stroke(0)
+        strokeWeight(3)
+        noFill()
+        ellipse(self.x, self.y, self.w, self.h)
+
+    # def constrain(self):
+    #     for wall in g.walls:
+    #         if self.x +self.r <
+
+
+class Man(Creature):
+
+    def __init__(self, x, y, r, imgFolder, w, h, F):
+        Creature.__init__(self, x, y, r, imgFolder, w, h, F)
+        self.keyHandler = {LEFT: False, RIGHT: False, UP: False, DOWN: False}
+        self.imgU = loadImage(path + "/assets/images/" + imgFolder + "/up.png")
+        self.imgD = loadImage(
+            path + "/assets/images/" + imgFolder + "/down.png")
+
+    def update(self):
+
+        # still need to add constrains--when it reached the wall it cannot move
+
+        # for wall in g.walls:
+        #     if self.distance(wall) > 0:
+        #         println(self.distance(wall))
+
+        # moving upwards
+        if self.keyHandler[UP]:
+            self.vy = -1
+            self.dir = "up"
+
+        # moving to the right
+        elif self.keyHandler[RIGHT]:
+            self.vx = 1
+            self.dir = "right"
+
+        # moving downwards
+        elif self.keyHandler[DOWN]:
+            self.vy = 1
+            self.dir = "down"
+
+        # moving to the left
+        elif self.keyHandler[LEFT]:
+            self.vx = -1
+            self.dir = "left"
+
+        else:
+            self.vx = 0
+            self.vy = 0
+
+            # else:
+            #     self.vx = 0
+            #     self.vy = 0
+
+        self.x += self.vx
+        self.y += self.vy
+
+        # self.bomb()
+
+    # def bomb(self):
+    #     if self.keyHandler[SPACE]:
+    #         println("bomb")
+
+
+class Monster(Creature):
+
+    def __init__(self, x, y, r, imgFolder, w, h, F, x1, x2):
+        Creature.__init__(self, x, y, r, imgFolder, w, h, F)
+        self.x1 = x1
+        self.x2 = x2
+        self.vx = random.randint(2, 4)
+        self.dir = random.choice(["left", "right"])
+
+    def update(self):
+        
+        if self.dir == "left":
+            self.vx = -1
+        elif self.dir == "right":
+            self.vx = 1
+
+        if self.x > self.x2:
+            self.dir = "left"
+            self.vx *= -1
+        elif self.x < self.x1:
+            self.dir = "right"
+            self.vx *= -1
+
+        self.x += self.vx
+        self.y += self.vy
+
+
+class Prop:
+
+    def __init__(self, x, y, r, img, w, h):
+        self.x = x
+        self.y = y
+        self.r = r
+        self.w = w
+        self.h = h
+        self.img = loadImage(path + "/assets/images/" + img + ".png")
+
+
+class Block:
+
+    def __init__(self, r, c, w):
+        self.r = r
+        self.c = c
+        self.w = w
+        self.concrete = loadImage(path + "/assets/images/concrete.png")
+        self.destroyed = False    # whether it is static or can be destroyed
+        self.brick = loadImage(path + "/assets/images/brick.png")
+        self.filled = False;
+
+    def display(self):
+        
+        if (self.destroyed == True):
+            image(self.brick, self.r*self.w, self.c*self.w, self.w, self.w)
+        else:
+            image(self.concrete, self.r*self.w, self.c*self.w, self.w, self.w)
+
+
+class Game:
+
+    def __init__(self, w, h):
+        self.x = 0
+        self.w = w
+        self.h = h
+        self.weight = 64
+        self.numBrick = 40
+        self.brickX = 0
+        self.brickY = 0
+
+        # Making the arena
+        self.blocks = []
+        
+        # First and large row
+        for c in range(15):
+            self.block1 = Block(c, 0, 64)
+            self.blocks.append(self.block1)
+            self.block2 = Block(c, 10, 64)
+            self.blocks.append(self.block2)
+            
+        #Middle rows
+        for r in range(1,10):
+            if r %2 == 1:
+                self.blocks.append(Block(0,r,64))
+                self.blocks.append(Block(14,r,64))
+            else:
+                for c in range(15):
+                    if c%2 == 0:
+                        self.blocks.append(Block(c,r,64))
+        
+        #Randomly generate the brick
+        i = 0
+        while i < self.numBrick:
+            self.br = random.randint(1,13)
+            self.bc = random.randint(1,9)
+            self.b = self.getBlock(self.br,self.bc)
+            if self.b == None:
+                i +=1
+                self.block = Block(self.br,self.bc,64);
+                self.block.destroyed = True
+                self.blocks.append(self.block)
+            
+    
+        # create bomberman, need to change the picture displayed here
+        self.man = Man(
+            self.weight + 32, self.h - self.weight - 32, 64, "man", 64, 64, 3)
+        
+        self.enemies=[]
+        for i in range(1, 10):
+            if i % 2 == 1:
+                self.enemies.append(Monster(random.randint(150,850),i * 64+32,64,"enemy",64,64,1, self.weight + 32, self.w-self.weight-32))
+            
+    def getBlock(self,r,c):
+        for b in self.blocks:
+          if b.r == r and b.c == c:
+              return b
+          
+    def xyTOrc(self,x,y):
+        r = y // 64;
+        c = x // 64;
+        return (r,c)
+            
+    def display(self):
+        self.man.display()
+
+        # for sur in self.surs:
+        #     sur.display()
+        for block in self.blocks:
+            block.display()
+            
+        for enemy in self.enemies:
+            enemy.display()
+
+
+g = Game(960, 704)
+
+def setup():
+    size(g.w, g.h)
+
+def draw():
+    background(34,119,0)
+    g.display()
+
+
+# control the object movement
+def keyPressed():
+    if keyCode == LEFT:
+        g.man.keyHandler[LEFT] = True
+    elif keyCode == RIGHT:
+        g.man.keyHandler[RIGHT] = True
+    elif keyCode == UP:
+        g.man.keyHandler[UP] = True
+    elif keyCode == DOWN:
+        g.man.keyHandler[DOWN] = True
+
+def keyReleased():
+    if keyCode == LEFT:
+        g.man.keyHandler[LEFT] = False
+    elif keyCode == RIGHT:
+        g.man.keyHandler[RIGHT] = False
+    elif keyCode == UP:
+        g.man.keyHandler[UP] = False
+    elif keyCode == DOWN:
+        g.man.keyHandler[DOWN] = False
